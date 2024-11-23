@@ -1,0 +1,53 @@
+package main
+
+import (
+	"context"
+	"encoding/json"
+	"fmt"
+	"log"
+	"os"
+
+	firebase "firebase.google.com/go/v4"
+	"google.golang.org/api/option"
+)
+
+func main() {
+
+	serviceAccountKey := "privt_test_key.json"
+	jsonFilePath := "datas.json"
+
+	config := &firebase.Config{
+		DatabaseURL: "https://test-project-22e3e-default-rtdb.firebaseio.com/",
+	}
+
+	opt := option.WithCredentialsFile(serviceAccountKey)
+	app, err := firebase.NewApp(context.Background(), config, opt)
+	if err != nil {
+		log.Fatalf("Erro ao inicializar o app Firebase: %v", err)
+	}
+
+	client, err := app.Database(context.Background())
+	if err != nil {
+		log.Fatalf("Erro ao inicializar o cliente do Realtime Database: %v", err)
+	}
+
+	file, err := os.ReadFile(jsonFilePath)
+	if err != nil {
+		log.Fatalf("Erro ao ler o arquivo JSON: %v", err)
+	}
+
+	var datas map[string]interface{}
+	if err := json.Unmarshal(file, &datas); err != nil {
+		log.Fatalf("Erro ao fazer o parse dos dados JSON: %v", err)
+	}
+
+	// Referência ao nó do banco
+	ref := client.NewRef("air_quality")
+
+	// Inserir os dados no banco
+	if err := ref.Set(context.Background(), datas); err != nil {
+		log.Fatalf("Erro ao inserir dados no banco: %v", err)
+	}
+
+	fmt.Println("Dados inseridos com sucesso!")
+}
